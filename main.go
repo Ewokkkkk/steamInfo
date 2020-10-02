@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -141,8 +142,7 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// apiKey := os.Getenv("STEAM_APIKEY")
-	apiKey := "B4E99A78E917F2BE6E533AB59ACEF66F"
+	apiKey := os.Getenv("STEAM_APIKEY")
 	steamid := "76561198051101724" // my id
 	playerSummaries := GetPlayerSummaries(apiKey, steamid)
 	ownedGames := getUserGameList(apiKey, steamid)
