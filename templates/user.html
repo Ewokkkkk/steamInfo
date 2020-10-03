@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!-- branchのテスト -->
+<!-- branchのテスト２ -->
+<!-- branchのテスト3 -->
+<html>
+
+<head>
+	<title>{{.Personaname}}</title>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+	<style>
+		ul#messages {
+			list-style: none;
+		}
+
+		ul#messages li {
+			margin-bottom: 2px;
+		}
+
+		ul#messages li img {
+			margin-right: 10px;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<img src="{{.Avatarfull}}"><strong>{{.Personaname}}</strong> Game Count : {{.GameCount}} Total Playtime : {{.TotalPlaytime}}h
+			</div>
+        </div>
+		<ul>
+			{{ range .Games }}
+			<a href="https://store.steampowered.com/app/{{.Appid}}">
+				<li>
+				<img src="http://media.steampowered.com/steamcommunity/public/images/apps/{{.Appid}}/{{.ImgLogoURL }}.jpg"> <strong>{{ .Name }}</strong> {{HourTimes .PlaytimeForever}}h {{.Price}}
+				</li>
+			</a>
+			{{ end }}
+		</ul>
+	</div>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+</body>
+
+</html>

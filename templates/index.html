@@ -29,18 +29,15 @@
 				<ul id="messages"></ul>
 			</div>
         </div>
-        {{.Title}} {{.Count}} count
-		<form id="chatbox" role="form">
+		<form action="/user" id="chatbox" role="form">
 			<div class="form-group">
-				<label for="message">{{.Title}}からメッセージを送信</label>
-				または<a href="/logout">サインアウト</a>
-				<textarea id="message" class="form-control"></textarea>
+				ユーザーIDを入力：<input type="text" name="userid">
 			</div>
 			<input type="submit" value="送信" class="btn btn-default" />
 		</form>
 	</div>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-	<script>
+	<!-- <script>
 		$(function () {
 			var socket = null;
 			var msgBox = $("#chatbox textarea");
@@ -78,7 +75,7 @@
 				}
 			}
 		});
-	</script>
+	</script> -->
 </body>
 
 </html>
