@@ -74,8 +74,15 @@ type OwnedGames struct {
 		} `json:"games"`
 	} `json:"response"`
 }
+type VanityURL struct {
+	Response struct {
+		Success int    `json:"success"`
+		Steamid string `json:"steamid"`
+		Message string `json:"message"`
+	} `json:"response"`
+}
 
-func GetPlayerSummaries(apiKey, steamid string) PlayerSummaries {
+func getPlayerSummaries(apiKey, steamid string) PlayerSummaries {
 	url := "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -204,7 +211,46 @@ func getPriceJPY(Appids []string) string {
 		}
 	}
 	return price
+}
 
+// url末尾の値(steamid or customURL)を入力し、apiからsteamidを取得する
+func getSteamID(apiKey, val string) string {
+	url := "http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/"
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	params := request.URL.Query()
+	params.Add("key", apiKey)
+	params.Add("vanityurl", val)
+	request.URL.RawQuery = params.Encode()
+	fmt.Println(request.URL.String())
+
+	timeout := time.Duration(5 * time.Second)
+	client := &http.Client{
+		Timeout: timeout,
+	}
+
+	response, err := client.Do(request)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var responseID VanityURL
+	if err := json.Unmarshal(body, &responseID); err != nil {
+		log.Fatal(err)
+	}
+	if responseID.Response.Success != 1 {
+		return val
+	}
+
+	return responseID.Response.Steamid
 }
 
 // テンプレート用独自関数
@@ -216,8 +262,15 @@ func user(w http.ResponseWriter, r *http.Request) {
 	var appids []string
 
 	fmt.Println("method:", r.Method)
-	id := r.FormValue("userid")
-	playerSummaries := GetPlayerSummaries(apiKey, id)
+
+	// url→idの処理
+	//またはカスタムurl→ResolveVanityURL→id
+
+	segs := strings.Split(r.FormValue("userid"), "/")
+	val := segs[len(segs)-2]
+	id := getSteamID(apiKey, val)
+
+	playerSummaries := getPlayerSummaries(apiKey, id)
 	ownedGames := getUserGameList(apiKey, id)
 	TotalPlaytime := 0
 	gameCount := ownedGames.Response.GameCount
