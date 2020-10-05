@@ -267,7 +267,7 @@ func user(w http.ResponseWriter, r *http.Request) {
 	//またはカスタムurl→ResolveVanityURL→id
 
 	segs := strings.Split(r.FormValue("userid"), "/")
-	val := segs[len(segs)-2]
+	val := segs[4]
 	id := getSteamID(apiKey, val)
 
 	playerSummaries := getPlayerSummaries(apiKey, id)
