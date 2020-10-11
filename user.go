@@ -15,9 +15,10 @@ import (
 )
 
 type Data struct {
-	Personaname   string
-	Profileurl    string
-	Avatarfull    string
+	Personaname string
+	Profileurl  string
+	// Avatarfull    string
+	Avatarmedium  string
 	GameCount     int
 	TotalPlaytime int
 	Games         []struct {
@@ -51,7 +52,8 @@ type PlayerSummaries struct {
 			Steamid     string `json:"steamid"`
 			Personaname string `json:"personaname"`
 			Profileurl  string `json:"profileurl"`
-			Avatarfull  string `json:"avatarfull"`
+			// Avatarfull   string `json:"avatarfull"`
+			Avatarmedium string `json:"avatarmedium"`
 		} `json:"players"`
 	} `json:"response"`
 }
@@ -297,9 +299,10 @@ func user(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	data := Data{
-		Personaname:   playerSummaries.Response.Players[0].Personaname,
-		Profileurl:    playerSummaries.Response.Players[0].Profileurl,
-		Avatarfull:    playerSummaries.Response.Players[0].Avatarfull,
+		Personaname: playerSummaries.Response.Players[0].Personaname,
+		Profileurl:  playerSummaries.Response.Players[0].Profileurl,
+		// Avatarfull:    playerSummaries.Response.Players[0].Avatarfull,
+		Avatarmedium:  playerSummaries.Response.Players[0].Avatarmedium,
 		GameCount:     ownedGames.Response.GameCount,
 		TotalPlaytime: TotalPlaytime / 60,
 		Games:         ownedGames.Response.Games,
