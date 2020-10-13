@@ -7,39 +7,59 @@
 <head>
 	<title>{{.Personaname}}</title>
 	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-	<style>
-		ul#messages {
-			list-style: none;
-		}
+	<link rel="stylesheet" href="main.css" />
 
-		ul#messages li {
-			margin-bottom: 2px;
-		}
-
-		ul#messages li img {
-			margin-right: 10px;
-		}
-	</style>
 </head>
 
 <body>
 	<div class="container">
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<img src="{{.Avatarfull}}"><strong>{{.Personaname}}</strong> Game Count : {{.GameCount}} Total Playtime : {{.TotalPlaytime}}h
+				<a target="_blank" href="{{ .Profileurl }}"><img src="{{.Avatarmedium}}"><strong>{{.Personaname}}</a>
+				</strong> Game Count
+				: {{.GameCount}} Total
+				Playtime : {{.TotalPlaytime}}h
 			</div>
-        </div>
-		<ul>
-			{{ range .Games }}
-			<a href="https://store.steampowered.com/app/{{.Appid}}">
-				<li>
-				<img src="http://media.steampowered.com/steamcommunity/public/images/apps/{{.Appid}}/{{.ImgLogoURL }}.jpg"> <strong>{{ .Name }}</strong> {{HourTimes .PlaytimeForever}}h {{.Price}}
+		</div>
+
+		<div id="name-list">
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<label>ゲーム名で検索：<input class="search" placeholder="Search" /></label>
+					<label>並び替え：</label>
+					<button class="sort" data-sort="gameName">
+						名前順
+					</button>
+					<button class="sort" data-sort="gamePrice">
+						プレー時間順
+					</button>
+				</div>
+			</div>
+
+			<ul style="list-style: none;" class="list">
+				{{ range .Games }}
+				<a href="https://store.steampowered.com/app/{{.Appid}}">
+					<li>
+						<img
+							src="http://media.steampowered.com/steamcommunity/public/images/apps/{{.Appid}}/{{.ImgLogoURL }}.jpg">
+						<span class="gameName"><strong>{{ .Name }}</strong></span>
+				</a>
+				- <span class="gamePrice">{{HourTimes .PlaytimeForever}}</span>h {{.Price}}
 				</li>
-			</a>
-			{{ end }}
-		</ul>
+				{{ end }}
+			</ul>
+
+		</div>
 	</div>
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/list.js/1.2.0/list.min.js"></script>
+	<script>
+		var options = {
+			valueNames: ['gameName', 'gamePrice']
+		};
+
+		var userList = new List('name-list', options);
+	</script>
 </body>
 
 </html>
