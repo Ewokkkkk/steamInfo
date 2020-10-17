@@ -65,6 +65,7 @@ func main() {
 			panic(err.Error())
 		}
 		fmt.Println(lastInsertID)
+
 	}
 }
 
