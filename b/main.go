@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -33,39 +34,36 @@ var GamesInfo []GameInfo
 
 func main() {
 	games := getGameList()
-	// for _, val := range games.Applist.Apps {
-	// 	getGamesInfo(val.Appid)
-	// 	fmt.Println(GamesInfo)
-	// 	time.Sleep(time.Second * 3)
-	// }
 	getGamesInfo(games)
-	fmt.Println(games.Applist.Apps[0].Date)
+	fmt.Println(games)
 
-	// db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
-	// defer db.Close()
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
 
-	// stmtInsert, err := db.Prepare("INSERT INTO games_info(id, name) VALUES(?, ?)")
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
-	// defer stmtInsert.Close()
-	// for _, val := range games.Applist.Apps {
-	// 	id := val.Appid
-	// 	name := val.Name
-	// 	result, err := stmtInsert.Exec(id, name)
-	// 	if err != nil {
-	// 		panic(err.Error())
-	// 	}
-	// 	lastInsertID, err := result.LastInsertId()
-	// 	if err != nil {
-	// 		panic(err.Error())
-	// 	}
-	// 	fmt.Println(lastInsertID)
+	stmtInsert, err := db.Prepare("INSERT INTO games_info(id, name, release_date, price) VALUES(?, ?, ?, ?)")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer stmtInsert.Close()
+	for _, val := range games.Applist.Apps {
+		id := val.Appid
+		name := val.Name
+		releaseDate := val.Date
+		price := val.Price
+		result, err := stmtInsert.Exec(id, name, releaseDate, price)
+		if err != nil {
+			panic(err.Error())
+		}
+		lastInsertID, err := result.LastInsertId()
+		if err != nil {
+			panic(err.Error())
+		}
+		fmt.Println(lastInsertID)
 
-	// }
+	}
 }
 
 func getGameList() GameList {
@@ -101,9 +99,7 @@ func getGameList() GameList {
 
 // func getGamesInfo(Appid int) {
 func getGamesInfo(games GameList) {
-	cnt := 0
-	for _, val := range games.Applist.Apps {
-
+	for i, val := range games.Applist.Apps {
 		url := "https://store.steampowered.com/api/appdetails"
 		request, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -115,9 +111,9 @@ func getGamesInfo(games GameList) {
 		params.Add("l", "japanese")
 		params.Add("appids", strconv.Itoa(val.Appid))
 		request.URL.RawQuery = params.Encode()
-		fmt.Println(request.URL.String())
+		fmt.Println(i, request.URL.String())
 
-		timeout := time.Duration(5 * time.Second)
+		timeout := time.Duration(10 * time.Second)
 		client := &http.Client{
 			Timeout: timeout,
 		}
@@ -158,7 +154,7 @@ func getGamesInfo(games GameList) {
 		val.Price = price
 		val.Date = date
 
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 2)
 
 	}
 }
