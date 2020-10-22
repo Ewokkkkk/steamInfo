@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -11,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitly/go-simplejson"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type Data struct {
@@ -42,7 +43,8 @@ type Data struct {
 		PlaytimeLinuxForever     int    `json:"playtime_linux_forever"`
 		HasCommunityVisibleStats bool   `json:"has_community_visible_stats,omitempty"`
 		Playtime2Weeks           int    `json:"playtime_2weeks,omitempty"`
-		Price                    string
+		Price                    int
+		ReleaseDate              string
 	}
 }
 
@@ -72,7 +74,8 @@ type OwnedGames struct {
 			PlaytimeLinuxForever     int    `json:"playtime_linux_forever"`
 			HasCommunityVisibleStats bool   `json:"has_community_visible_stats,omitempty"`
 			Playtime2Weeks           int    `json:"playtime_2weeks,omitempty"`
-			Price                    string
+			Price                    int
+			ReleaseDate              string
 		} `json:"games"`
 	} `json:"response"`
 }
@@ -159,60 +162,24 @@ func getUserGameList(apiKey, steamid string) OwnedGames {
 	return games
 }
 
-func getPriceJPY(Appids []string) string {
-	url := "https://store.steampowered.com/api/appdetails"
-	request, err := http.NewRequest("GET", url, nil)
+func getGamesInfo(appid int) (price int, releaseDate string) {
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
 	if err != nil {
-		log.Fatal(err)
+		panic(err.Error())
 	}
-	id := strings.Join(Appids, ",")
-	// id = id + id + id + id
-	params := request.URL.Query()
-	params.Add("appids", id)
-	params.Add("filters", "price_overview")
-	request.URL.RawQuery = params.Encode()
-	fmt.Println(request.URL.String())
-	timeout := time.Duration(5 * time.Second)
-	client := &http.Client{
-		Timeout: timeout,
+	defer db.Close()
+	var d string
+	var p int
+	err = db.QueryRow("SELECT release_date, price FROM games_info WHERE id = ? LIMIT 1", appid).Scan(&d, &p)
+	if err == sql.ErrNoRows { //  見つからなかった
+		d = "-"
+		p = -1
+	} else if err != nil { // それ以外のエラー
+		log.Fatalln(err)
 	}
 
-	response, err := client.Do(request)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	js, err := simplejson.NewJson(body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	m, err := js.Map()
-	if err != nil {
-		log.Fatal(err)
-	}
-	keys := make([]string, 0, len(m))
-	for k, _ := range m {
-		keys = append(keys, k)
-	}
-
-	price, err := js.GetPath(keys[0], "data", "price_overview", "initial_formatted").String()
-	if err != nil {
-		return "--"
-	}
-	// セール中でなければinitial_formattedは空なのでfinal_formattedから取得する
-	if price == "" {
-		price, err = js.GetPath(keys[0], "data", "price_overview", "final_formatted").String()
-		if err != nil {
-			return "--"
-		}
-	}
-	return price
+	fmt.Println(d, p)
+	return p, d
 }
 
 // url末尾の値(steamid or customURL)を入力し、apiからsteamidを取得する
@@ -279,9 +246,12 @@ func user(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(playerSummaries.Response.Players[0].Personaname)
 	fmt.Println("game count:", gameCount)
-	for _, val := range ownedGames.Response.Games {
+	for i, val := range ownedGames.Response.Games {
 		fmt.Printf("%-40v% 5vh\n", val.Name, val.PlaytimeForever/60)
 		TotalPlaytime += val.PlaytimeForever
+		price, releaseDate := getGamesInfo(val.Appid)
+		ownedGames.Response.Games[i].Price = price
+		ownedGames.Response.Games[i].ReleaseDate = releaseDate
 		// val.Price = getPriceJPY(val.Appid)
 		// time.Sleep(time.Second * 5)
 		appids = append(appids, strconv.Itoa(val.Appid))
