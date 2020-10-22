@@ -17,25 +17,27 @@ import (
 type GameList struct {
 	Applist struct {
 		Apps []struct {
-			Appid int    `json:"appid"`
-			Name  string `json:"name"`
-			Price int
-			Date  string
+			Appid  int    `json:"appid"`
+			Name   string `json:"name"`
+			IsFree bool
+			Price  int
+			Date   string
 		} `json:"apps"`
 	} `json:"applist"`
 }
 
-type GameInfo struct {
-	Price int
-	Date  string
-}
+// type GameInfo struct {
+// 	isFree bool
+// 	Price  int
+// 	Date   string
+// }
 
-var GamesInfo []GameInfo
+// var GamesInfo []GameInfo
 
 func main() {
 	games := getGameList()
 	getGamesInfo(games)
-	fmt.Println(games)
+	// fmt.Println(games)
 
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
 	if err != nil {
@@ -43,7 +45,7 @@ func main() {
 	}
 	defer db.Close()
 
-	stmtInsert, err := db.Prepare("INSERT INTO games_info(id, name, release_date, price) VALUES(?, ?, ?, ?)")
+	stmtInsert, err := db.Prepare("INSERT INTO games_info(id, name, release_date, price, is_free) VALUES(?, ?, ?, ?, ?)")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -53,7 +55,9 @@ func main() {
 		name := val.Name
 		releaseDate := val.Date
 		price := val.Price
-		result, err := stmtInsert.Exec(id, name, releaseDate, price)
+		isFree := val.IsFree
+
+		result, err := stmtInsert.Exec(id, name, releaseDate, price, isFree)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -106,7 +110,7 @@ func getGamesInfo(games GameList) {
 			log.Fatal(err)
 		}
 		params := request.URL.Query()
-		params.Add("filters", "price_overview,release_date")
+		// params.Add("filters", "price_overview,release_date")
 		params.Add("cc", "jpy")
 		params.Add("l", "japanese")
 		params.Add("appids", strconv.Itoa(val.Appid))
@@ -139,22 +143,38 @@ func getGamesInfo(games GameList) {
 			log.Fatal(err)
 		}
 		keys := make([]string, 0, len(m))
-		for k, _ := range m {
+		for k := range m {
 			keys = append(keys, k)
+		}
+
+		isFree, err := js.GetPath(keys[0], "data", "is_free").Bool()
+		if err != nil {
+			isFree = false
 		}
 		price, err := js.GetPath(keys[0], "data", "price_overview", "initial").Int()
 		if err != nil {
 			price = -1
 		}
-
 		date, err := js.GetPath(keys[0], "data", "release_date", "date").String()
 		if err != nil {
 			date = "-"
 		}
-		val.Price = price
-		val.Date = date
+
+		if isFree == true {
+			games.Applist.Apps[i].Price = 0
+		} else if price != -1 {
+			price /= 100
+			games.Applist.Apps[i].Price = price
+		}
+		games.Applist.Apps[i].IsFree = isFree
+		games.Applist.Apps[i].Date = date
 
 		time.Sleep(time.Second * 2)
+
+		// テスト用
+		if i > 10000 {
+			return
+		}
 
 	}
 }

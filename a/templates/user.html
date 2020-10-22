@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-<!-- branchのテスト -->
-<!-- branchのテスト２ -->
-<!-- branchのテスト3 -->
 <html>
 
 <head>
@@ -30,8 +27,11 @@
 					<button class="sort" data-sort="gameName">
 						名前順
 					</button>
-					<button class="sort" data-sort="gamePrice">
+					<button class="sort" data-sort="gamePlayTime">
 						プレー時間順
+					</button>
+					<button class="sort" data-sort="gamePrice">
+						価格順
 					</button>
 				</div>
 			</div>
@@ -44,7 +44,9 @@
 							src="http://media.steampowered.com/steamcommunity/public/images/apps/{{.Appid}}/{{.ImgLogoURL }}.jpg">
 						<span class="gameName"><strong>{{ .Name }}</strong></span>
 				</a>
-				- <span class="gamePrice">{{HourTimes .PlaytimeForever}}</span>h {{.Price}}
+				- <span class="gamePlayTime">{{HourTimes .PlaytimeForever}}</span>h - price: <span
+					class="gamePrice">{{.Price}}</span> -
+				{{.ReleaseDate}}
 				</li>
 				{{ end }}
 			</ul>
@@ -55,7 +57,7 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/list.js/1.2.0/list.min.js"></script>
 	<script>
 		var options = {
-			valueNames: ['gameName', 'gamePrice']
+			valueNames: ['gameName', 'gamePlayTime', 'gamePrice']
 		};
 
 		var userList = new List('name-list', options);
