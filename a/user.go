@@ -92,8 +92,8 @@ type VanityURL struct {
 	} `json:"response"`
 }
 
-// getPlayerSummaries はsteamAPIにsteamIDを渡してプレーヤー情報を取得し、構造体PlayerSummariesに格納する関数
-func getPlayerSummaries(apiKey, steamid string) PlayerSummaries {
+// GetPlayerSummaries はsteamAPIにsteamIDを渡してプレーヤー情報を取得し、構造体PlayerSummariesに格納する関数
+func GetPlayerSummaries(apiKey, steamid string) PlayerSummaries {
 	url := "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -130,8 +130,8 @@ func getPlayerSummaries(apiKey, steamid string) PlayerSummaries {
 	return player
 }
 
-// getUserGameList はsteamAPIにsteamIDを渡してそのプレーヤーが所有しているゲームの情報を取得し、構造体OwnedGamesに格納する関数
-func getUserGameList(apiKey, steamid string) OwnedGames {
+// UserGameList はsteamAPIにsteamIDを渡してそのプレーヤーが所有しているゲームの情報を取得し、構造体OwnedGamesに格納する関数
+func UserGameList(apiKey, steamid string) OwnedGames {
 	url := "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -169,15 +169,18 @@ func getUserGameList(apiKey, steamid string) OwnedGames {
 	return games
 }
 
-// getGamesInfo はDBにappIDを渡してゲームの価格、発売日を返す関数
-func getGamesInfo(appid int) (price int, releaseDate string) {
+// GamesInfo はDBにappIDを渡してゲームの価格、発売日を返す関数
+func GamesInfo(appid int) (price int, releaseDate string) {
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
-	var d string
-	var p int
+
+	var (
+		d string
+		p int
+	)
 
 	// テスト用
 	err = db.QueryRow("SELECT release_date, price FROM games_info WHERE id = ? LIMIT 1", appid).Scan(&d, &p)
@@ -192,8 +195,8 @@ func getGamesInfo(appid int) (price int, releaseDate string) {
 	return p, d
 }
 
-// getSteamID はフォームに入力されたurl末尾の値(steamid or customURL)を用いて、apiからsteamidを取得する
-func getSteamID(apiKey, val string) string {
+// SteamID はフォームに入力されたurl末尾の値(steamid or customURL)を用いて、apiからsteamidを取得する
+func SteamID(apiKey, val string) string {
 	url := "http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/"
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -242,31 +245,28 @@ func user(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("method:", r.Method)
 
-	// url→idの処理
-	//またはカスタムurl→ResolveVanityURL→id
-
+	//url->id、またはカスタムurl->ResolveVanityURL->idの処理
 	segs := strings.Split(r.FormValue("userid"), "/")
 	val := segs[4]
-	id := getSteamID(apiKey, val)
+	id := SteamID(apiKey, val)
 
-	playerSummaries := getPlayerSummaries(apiKey, id)
-	ownedGames := getUserGameList(apiKey, id)
-	TotalPlaytime := 0
-	gameCount := ownedGames.Response.GameCount
+	var (
+		playerSummaries = GetPlayerSummaries(apiKey, id)
+		ownedGames      = UserGameList(apiKey, id)
+		TotalPlaytime   = 0
+		gameCount       = ownedGames.Response.GameCount
+	)
 
 	fmt.Println(playerSummaries.Response.Players[0].Personaname)
 	fmt.Println("game count:", gameCount)
 	for i, val := range ownedGames.Response.Games {
 		fmt.Printf("%-40v% 5vh\n", val.Name, val.PlaytimeForever/60)
 		TotalPlaytime += val.PlaytimeForever
-		price, releaseDate := getGamesInfo(val.Appid)
+		price, releaseDate := GamesInfo(val.Appid)
 		ownedGames.Response.Games[i].Price = price
 		ownedGames.Response.Games[i].ReleaseDate = releaseDate
-		// val.Price = getPriceJPY(val.Appid)
-		// time.Sleep(time.Second * 5)
 		appids = append(appids, strconv.Itoa(val.Appid))
 	}
-	// getPriceJPY(appids) // test
 
 	fmt.Printf("total:% 40vh\n", TotalPlaytime/60)
 
