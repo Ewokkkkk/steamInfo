@@ -102,7 +102,6 @@ func getGameList() GameList {
 	return gameList
 }
 
-// func getGamesInfo(Appid int) {
 func getGamesInfo(games GameList) {
 	for i, val := range games.Applist.Apps {
 		url := "https://store.steampowered.com/api/appdetails"
