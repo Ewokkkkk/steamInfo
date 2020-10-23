@@ -15,6 +15,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// Data はテンプレートに渡すデータ用の構造体
 type Data struct {
 	Personaname string
 	Profileurl  string
@@ -48,6 +49,7 @@ type Data struct {
 	}
 }
 
+// PlayerSummaries はsteamAPIからプレーヤー情報を取得するときに用いる構造体
 type PlayerSummaries struct {
 	Response struct {
 		Players []struct {
@@ -60,6 +62,7 @@ type PlayerSummaries struct {
 	} `json:"response"`
 }
 
+// OwnedGames はsteamAPIから所有しているゲームの情報を取得するときに用いる構造体
 type OwnedGames struct {
 	Response struct {
 		GameCount int `json:"game_count"`
@@ -79,6 +82,8 @@ type OwnedGames struct {
 		} `json:"games"`
 	} `json:"response"`
 }
+
+// VanityURL はカスタムURLをsteamAPIでsteamidに変換するときに用いる構造体
 type VanityURL struct {
 	Response struct {
 		Success int    `json:"success"`
@@ -87,6 +92,7 @@ type VanityURL struct {
 	} `json:"response"`
 }
 
+// getPlayerSummaries はsteamAPIにsteamIDを渡してプレーヤー情報を取得し、構造体PlayerSummariesに格納する関数
 func getPlayerSummaries(apiKey, steamid string) PlayerSummaries {
 	url := "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
 	request, err := http.NewRequest("GET", url, nil)
@@ -124,6 +130,7 @@ func getPlayerSummaries(apiKey, steamid string) PlayerSummaries {
 	return player
 }
 
+// getUserGameList はsteamAPIにsteamIDを渡してそのプレーヤーが所有しているゲームの情報を取得し、構造体OwnedGamesに格納する関数
 func getUserGameList(apiKey, steamid string) OwnedGames {
 	url := "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
 	request, err := http.NewRequest("GET", url, nil)
@@ -162,6 +169,7 @@ func getUserGameList(apiKey, steamid string) OwnedGames {
 	return games
 }
 
+// getGamesInfo はDBにappIDを渡してゲームの価格、発売日を返す関数
 func getGamesInfo(appid int) (price int, releaseDate string) {
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
 	if err != nil {
@@ -170,6 +178,8 @@ func getGamesInfo(appid int) (price int, releaseDate string) {
 	defer db.Close()
 	var d string
 	var p int
+
+	// テスト用
 	err = db.QueryRow("SELECT release_date, price FROM games_info WHERE id = ? LIMIT 1", appid).Scan(&d, &p)
 	if err == sql.ErrNoRows { //  見つからなかった
 		d = "-"
@@ -182,7 +192,7 @@ func getGamesInfo(appid int) (price int, releaseDate string) {
 	return p, d
 }
 
-// url末尾の値(steamid or customURL)を入力し、apiからsteamidを取得する
+// getSteamID はフォームに入力されたurl末尾の値(steamid or customURL)を用いて、apiからsteamidを取得する
 func getSteamID(apiKey, val string) string {
 	url := "http://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/"
 	request, err := http.NewRequest("GET", url, nil)
@@ -222,7 +232,7 @@ func getSteamID(apiKey, val string) string {
 	return responseID.Response.Steamid
 }
 
-// テンプレート用独自関数
+// HourTimes はテンプレート用独自関数。 分単位の時間を時間単位にして返す
 func HourTimes(i int) int {
 	return i / 60
 }

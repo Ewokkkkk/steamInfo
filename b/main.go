@@ -172,7 +172,7 @@ func getGamesInfo(games GameList) {
 		time.Sleep(time.Second * 2)
 
 		// テスト用
-		if i > 10000 {
+		if i > 1000 {
 			return
 		}
 
