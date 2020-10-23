@@ -14,6 +14,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// GameList はストアの全ゲームをsteamAPIから取得し、格納する構造体
 type GameList struct {
 	Applist struct {
 		Apps []struct {
