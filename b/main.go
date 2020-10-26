@@ -40,7 +40,7 @@ func main() {
 	getGamesInfo(games)
 	// fmt.Println(games)
 
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
+	db, err := sql.Open("mysql", "ew:4253@tcp(192.168.0.6:8889)/steam-info-db")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -172,7 +172,7 @@ func getGamesInfo(games GameList) {
 		time.Sleep(time.Second * 2)
 
 		// テスト用
-		if i > 1000 {
+		if i > 100 {
 			return
 		}
 
