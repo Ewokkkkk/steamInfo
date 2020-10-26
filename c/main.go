@@ -22,17 +22,8 @@ type GameList struct {
 	} `json:"applist"`
 }
 
-// type GameInfo struct {
-// 	isFree bool
-// 	Price  int
-// 	Date   string
-// }
-
-// var GamesInfo []GameInfo
-
 func main() {
 	games := getGameList()
-	// fmt.Println(games)
 
 	db, err := sql.Open("mysql", "ew:4253@tcp(192.168.0.6:8889)/steam-info-db")
 	if err != nil {

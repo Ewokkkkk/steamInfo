@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -16,95 +15,43 @@ import (
 
 // GameList はストアの全ゲームをsteamAPIから取得し、格納する構造体
 type GameList struct {
-	Applist struct {
-		Apps []struct {
-			Appid  int    `json:"appid"`
-			Name   string `json:"name"`
-			IsFree bool
-			Price  int
-			Date   string
-		} `json:"apps"`
-	} `json:"applist"`
+	Appid  int
+	Name   string
+	IsFree bool
+	Price  int
+	Date   string
 }
 
-// type GameInfo struct {
-// 	isFree bool
-// 	Price  int
-// 	Date   string
-// }
-
-// var GamesInfo []GameInfo
-
 func main() {
-	games := getGameList()
+	games := selectGameList()
 	getGamesInfo(games)
-	// fmt.Println(games)
 
+}
+
+func selectGameList() []GameList {
 	db, err := sql.Open("mysql", "ew:4253@tcp(192.168.0.6:8889)/steam-info-db")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
-
-	stmtInsert, err := db.Prepare("INSERT INTO games_info(id, name, release_date, price, is_free) VALUES(?, ?, ?, ?, ?)")
+	rows, err := db.Query("select app_id,app_name from game_list order by updated_at")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
-	defer stmtInsert.Close()
-	for _, val := range games.Applist.Apps {
-		id := val.Appid
-		name := val.Name
-		releaseDate := val.Date
-		price := val.Price
-		isFree := val.IsFree
-
-		result, err := stmtInsert.Exec(id, name, releaseDate, price, isFree)
-		if err != nil {
-			panic(err.Error())
+	var games []GameList
+	for rows.Next() {
+		game := GameList{}
+		if err := rows.Scan(&game.Appid, &game.Name); err != nil {
+			log.Fatal(err)
 		}
-		lastInsertID, err := result.LastInsertId()
-		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Println(lastInsertID)
-
+		games = append(games, game)
 	}
+	return games
 }
 
-func getGameList() GameList {
-	url := "https://api.steampowered.com/ISteamApps/GetAppList/v2/"
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(request.URL.String())
-	timeout := time.Duration(10 * time.Second)
-	client := &http.Client{
-		Timeout: timeout,
-	}
-
-	response, err := client.Do(request)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var gameList GameList
-	if err := json.Unmarshal(body, &gameList); err != nil {
-		log.Fatal(err)
-	}
-
-	return gameList
-}
-
-func getGamesInfo(games GameList) {
-	for i, val := range games.Applist.Apps {
-		url := "https://store.steampowered.com/api/appdetails"
+func getGamesInfo(games []GameList) {
+	url := "https://store.steampowered.com/api/appdetails"
+	for i, val := range games {
 		request, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			log.Fatal(err)
@@ -161,20 +108,54 @@ func getGamesInfo(games GameList) {
 		}
 
 		if isFree == true {
-			games.Applist.Apps[i].Price = 0
+			games[i].Price = 0
 		} else if price != -1 {
 			price /= 100
-			games.Applist.Apps[i].Price = price
+			games[i].Price = price
 		}
-		games.Applist.Apps[i].IsFree = isFree
-		games.Applist.Apps[i].Date = date
+		games[i].IsFree = isFree
+		games[i].Date = date
+
+		insertGamesInfo(games[i])
 
 		time.Sleep(time.Second * 2)
 
-		// テスト用
-		if i > 100 {
-			return
-		}
-
 	}
+}
+func insertGamesInfo(game GameList) {
+	db, err := sql.Open("mysql", "ew:4253@tcp(192.168.0.6:8889)/steam-info-db")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	stmtInsert, err := db.Prepare("INSERT INTO game_info(app_id, app_name, release_date, price, is_free) VALUES(?, ?, ?, ?, ?)")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer stmtInsert.Close()
+
+	id := game.Appid
+	name := game.Name
+	releaseDate := game.Date
+	price := game.Price
+	isFree := game.IsFree
+
+	result, err := stmtInsert.Exec(id, name, releaseDate, price, isFree)
+	if err != nil {
+		panic(err.Error())
+	}
+	lastInsertID, err := result.LastInsertId()
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println(lastInsertID, id, name, releaseDate, price, isFree)
+
+	upd, err := db.Prepare("UPDATE game_list set updated_at = ? where app_id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	t := time.Now()
+	ts := t.Format("2006-01-02 15:04:05")
+	upd.Exec(ts, id)
 }
