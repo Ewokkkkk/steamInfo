@@ -40,15 +40,30 @@ func main() {
 		id := val.Appid
 		name := val.Name
 
-		result, err := stmtInsert.Exec(id, name)
-		if err != nil {
+		var (
+			rowID   int
+			appID   int
+			appName string
+			date    interface{}
+		)
+
+		err = db.QueryRow("SELECT * FROM game_list WHERE app_id = ?", id).Scan(&rowID, &appID, &appName, &date)
+		switch {
+		case err == sql.ErrNoRows:
+			result, err := stmtInsert.Exec(id, name)
+			if err != nil {
+				panic(err.Error())
+			}
+			lastInsertID, err := result.LastInsertId()
+			if err != nil {
+				panic(err.Error())
+			}
+			fmt.Println(lastInsertID)
+		case err != nil:
 			panic(err.Error())
+		default:
+			fmt.Println("already exists.")
 		}
-		lastInsertID, err := result.LastInsertId()
-		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Println(lastInsertID)
 
 	}
 }
