@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -25,11 +26,12 @@ type GameList struct {
 func main() {
 	games := getGameList()
 
-	db, err := sql.Open("mysql", "ew:4253@tcp(192.168.0.6:8889)/steam-info-db")
+	db, err := sql.Open("mysql", "admin:"+os.Getenv("RDS_PASS")+"@tcp(database-1.cop2pvzm3623.ap-northeast-1.rds.amazonaws.com)/steam-info-db")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
+	fmt.Println("DB connected.")
 
 	stmtInsert, err := db.Prepare("INSERT INTO game_list(app_id, app_name) VALUES(?, ?)")
 	if err != nil {
@@ -62,7 +64,7 @@ func main() {
 		case err != nil:
 			panic(err.Error())
 		default:
-			fmt.Println("already exists.")
+			// fmt.Println("already exists.")
 		}
 
 	}

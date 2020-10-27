@@ -31,7 +31,6 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	apiKey = os.Getenv("STEAM_APIKEY")
-	//76561198051101724
 
 	http.Handle("/", &templateHandler{filename: "index.html"})
 	http.HandleFunc("/user", user)
