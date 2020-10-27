@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -171,7 +172,7 @@ func UserGameList(apiKey, steamid string) OwnedGames {
 
 // GamesInfo はDBにappIDを渡してゲームの価格、発売日を返す関数
 func GamesInfo(appid int) (price int, releaseDate string) {
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8889)/steam-info-db")
+	db, err := sql.Open("mysql", "admin:"+os.Getenv("RDS_PASS")+"@tcp(database-1.cop2pvzm3623.ap-northeast-1.rds.amazonaws.com)/steam-info-db")
 	if err != nil {
 		panic(err.Error())
 	}
